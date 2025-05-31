@@ -3,9 +3,9 @@ using System;
 public class Control
     : MonoBehaviour
 {
- 
 
 
+    public event Action OnPlayerJumped;
     [Header("References")]
     [SerializeField] private Transform _orientationTransform;
 
@@ -39,27 +39,43 @@ public class Control
     private Rigidbody _playerRigidbody;
 
 
-
-
+    private Control _playerController;
+    [SerializeField] private Animator _playerAnimator;
+    private StateController _stateController;
 
 
 
     private void Awake()
     {
+        _stateController = GetComponent<StateController>();
+        _playerController = GetComponent<Control>();
         _canJump = true;
         _playerRigidbody = GetComponent<Rigidbody>();
         _playerRigidbody.freezeRotation = true;
-
+       
         _startingMovementSpeed = _movementSpeed;
         _startingJumpForce = _jumpForce;
     }
+    private void Start()
+    {
+        _playerController.OnPlayerJumped += PlayerController_OnPlayerJumped;
+    }
+    private void PlayerController_OnPlayerJumped()
+    {
+        _playerAnimator.SetBool(Consts.PlayerAnimations.IS_JUMPING, true);
+        Invoke(nameof(ResetJumping), 0.5f);
+    }
 
+    private void ResetJumping()
+    {
+        _playerAnimator.SetBool(Consts.PlayerAnimations.IS_JUMPING, false);
+    }
     private void Update()
     {
        
 
         SetInputs();
- 
+        SetStates();
         SetPlayerSpeed();
         SetPlayerDrag();
     }
@@ -77,7 +93,16 @@ public class Control
     {
         _horizontalInput = Input.GetAxisRaw("Horizontal");
         _verticalInput = Input.GetAxisRaw("Vertical");
-        if (Input.GetKey(_jumpKey) && _canJump && IsGrounded())
+
+        if (Input.GetKeyDown(_slideKey))
+        {
+            _isSliding = true;
+        }
+        else if (Input.GetKeyDown(_moveKey))
+        {
+            _isSliding = false;
+        }
+        else if (Input.GetKey(_jumpKey) && _canJump && IsGrounded())
         {
             _canJump = false; 
             SetPlayerJumping();
@@ -87,15 +112,43 @@ public class Control
 
     }
 
-  
+    private void SetStates()
+    {
+        var movementDirection = GetMovementDirection();
+        var isGrounded = IsGrounded();
+        var currentState = _stateController.GetCurrentState();
+
+        var newState = currentState switch
+        {
+            _ when movementDirection == Vector3.zero && isGrounded && !IsSliding() => PlayerState.Idle,
+            _ when movementDirection != Vector3.zero && isGrounded && !IsSliding() => PlayerState.Move,
+            _ when movementDirection != Vector3.zero && isGrounded && IsSliding() => PlayerState.Slide,
+            _ when movementDirection == Vector3.zero && isGrounded && IsSliding() => PlayerState.SlideIdle,
+            _ when !_canJump && !isGrounded => PlayerState.Jump,
+            _ => currentState
+        };
+
+        if (newState != currentState)
+        {
+            _stateController.ChangeState(newState);
+            
+        }
+        
+    }
 
     public void SetPlayerMovement()
     {
         _movementDirection = _orientationTransform.forward * _verticalInput + _orientationTransform.right * _horizontalInput;
 
-       
+        float forceMultiplier = _stateController.GetCurrentState() switch
+        {
+            PlayerState.Move => 1f,
+            PlayerState.Jump => _airMultiplier,
+            PlayerState.Slide => _slideMultiplier,
+            _ => 1f
+        };
 
-        _playerRigidbody.AddForce(_movementDirection.normalized * _movementSpeed , ForceMode.Force);
+        _playerRigidbody.AddForce(_movementDirection.normalized * _movementSpeed * forceMultiplier, ForceMode.Force);
     }
 
     private void SetPlayerSpeed()
@@ -111,21 +164,20 @@ public class Control
 
     private void SetPlayerJumping()
     {
-        
+        OnPlayerJumped?.Invoke();
         _playerRigidbody.linearVelocity = new Vector3(_playerRigidbody.linearVelocity.x, 0f, _playerRigidbody.linearVelocity.z);
         _playerRigidbody.AddForce(transform.up * _jumpForce, ForceMode.Impulse);
     }
 
     private void SetPlayerDrag()
     {
-        if (IsGrounded())
+        _playerRigidbody.linearDamping = _stateController.GetCurrentState() switch
         {
-            _playerRigidbody.linearDamping = _groundDrag;
-        }
-        else
-        {
-            _playerRigidbody.linearDamping = _airDrag;
-        }
+            PlayerState.Move => _groundDrag,
+            PlayerState.Slide => _slideDrag,
+            PlayerState.Jump => _airDrag,
+            _ => _playerRigidbody.linearDamping
+        };
     }
 
 
@@ -141,10 +193,7 @@ public class Control
         return _isSliding;
     }
 
-    private void ResetJumping()
-    {
-        _canJump = true;
-    }
+   
 
     public Vector3 GetMovementDirection()
     {
