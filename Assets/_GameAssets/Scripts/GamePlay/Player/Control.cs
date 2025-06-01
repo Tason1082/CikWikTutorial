@@ -69,6 +69,7 @@ public class Control
     private void ResetJumping()
     {
         _playerAnimator.SetBool(Consts.PlayerAnimations.IS_JUMPING, false);
+        _canJump = true;
     }
     private void Update()
     {
