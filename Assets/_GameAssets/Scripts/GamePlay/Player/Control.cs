@@ -6,6 +6,7 @@ public class Control
 
 
     public event Action OnPlayerJumped;
+    public event Action<PlayerState> OnPlayerStateChanged;
     [Header("References")]
     [SerializeField] private Transform _orientationTransform;
 
@@ -132,7 +133,9 @@ public class Control
         if (newState != currentState)
         {
             _stateController.ChangeState(newState);
-            
+            OnPlayerStateChanged?.Invoke(newState);
+
+
         }
         
     }

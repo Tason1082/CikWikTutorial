@@ -13,4 +13,14 @@ public class WheatDesignSO : ScriptableObject
 public float ResetBoostDuration => resetBoostDuration;
 
     public float IncreaseDecreaseMultiplier => _increaseDecreaseMultiplier;
+    [SerializeField] private Sprite activeSprite;
+    [SerializeField] private Sprite passiveSprite;
+    [SerializeField] private Sprite activeWheatSprite;
+    [SerializeField] private Sprite passiveWheatSprite;
+
+
+    public Sprite ActiveSprite => activeSprite;
+    public Sprite PassiveSprite => passiveSprite;
+    public Sprite ActiveWheatSprite => activeWheatSprite;
+    public Sprite PassiveWheatSprite => passiveWheatSprite;
 }
