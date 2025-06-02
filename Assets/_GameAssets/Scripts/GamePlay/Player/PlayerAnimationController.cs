@@ -9,7 +9,7 @@ public class PlayerAnimationController : MonoBehaviour
     [SerializeField] private float _eggRotationDuration;
 
     private Vector3 _eggRotationVector = new Vector3(0f, 360f, 0f);
-
+    [SerializeField] private GameManager _gameManager;
     private Control _playerController;
     private StateController _stateController;
 
@@ -29,7 +29,8 @@ public class PlayerAnimationController : MonoBehaviour
 
     private void Update()
     {
-       
+        if (_gameManager.GetCurrentGameState() != GameState.Play
+           && _gameManager.GetCurrentGameState() != GameState.Resume) { return; }
 
         SetPlayerAnimations();
     }

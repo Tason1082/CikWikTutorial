@@ -7,7 +7,7 @@ public class ThirdPersonCameraController : MonoBehaviour
     [SerializeField] private Transform _playerTransform;
     [SerializeField] private Transform _playerVisualTransform;
     [SerializeField] private Rigidbody _playerRigidbody;
-
+    [SerializeField] private GameManager _gameManager;
     [Header("Settings")]
     [SerializeField] private float _rotationSpeed;
 
@@ -20,7 +20,8 @@ public class ThirdPersonCameraController : MonoBehaviour
 
     private void Update()
     {
-        
+        if (_gameManager.GetCurrentGameState() != GameState.Play
+             && _gameManager.GetCurrentGameState() != GameState.Resume) { return; }
 
         Vector3 viewDirection =
             _playerTransform.position - new Vector3(transform.position.x, _playerTransform.position.y, transform.position.z);

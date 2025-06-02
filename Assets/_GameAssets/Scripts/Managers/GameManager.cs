@@ -9,9 +9,10 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int _maxEggCount = 5;
     private int _currentEggCount;
     [SerializeField] private EggCounterUI _eggCounterUI;
-
+    [SerializeField] private GameManager _gameManager;
     public event Action<GameState> OnGameStateChanged;
     private GameState _currentGameState;
+   
 
     private void Awake()
     {
@@ -32,17 +33,21 @@ public class GameManager : MonoBehaviour
             
         }
     }
-    private void OnEnable()
+    private void Start()
     {
-        ChangeGameState(GameState.CutScene);
-        
+        ChangeGameState(GameState.Play);
     }
+
 
     public void ChangeGameState(GameState gameState)
     {
         OnGameStateChanged?.Invoke(gameState);
         _currentGameState = gameState;
         Debug.Log($"Game State: {gameState}");
+    }
+    public GameState GetCurrentGameState()
+    {
+        return _currentGameState;
     }
 }
 

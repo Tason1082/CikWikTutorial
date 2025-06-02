@@ -4,12 +4,12 @@ public class Control
     : MonoBehaviour
 {
 
-
+    [SerializeField] private GameManager _gameManager;
     public event Action OnPlayerJumped;
     public event Action<PlayerState> OnPlayerStateChanged;
     [Header("References")]
     [SerializeField] private Transform _orientationTransform;
-
+   
     [Header("Movement Settings")]
     [SerializeField] private KeyCode _moveKey;
     [SerializeField] private float _movementSpeed;
@@ -59,6 +59,7 @@ public class Control
     }
     private void Start()
     {
+        
         _playerController.OnPlayerJumped += PlayerController_OnPlayerJumped;
     }
     private void PlayerController_OnPlayerJumped()
@@ -74,7 +75,9 @@ public class Control
     }
     private void Update()
     {
-       
+
+        if (_gameManager.GetCurrentGameState() != GameState.Play
+           && _gameManager.GetCurrentGameState() != GameState.Resume) { return; }
 
         SetInputs();
         SetStates();
@@ -84,8 +87,8 @@ public class Control
 
     private void FixedUpdate()
     {
-       
 
+        
         SetPlayerMovement();
     }
 
