@@ -11,46 +11,63 @@ public class TimerUI : MonoBehaviour
     [SerializeField] private TMP_Text _timerText;
 
     [Header("Settings")]
-    [SerializeField] private float _rotationDuration;
-    [SerializeField] private Ease _rotationEase;
+ 
 
     private Vector3 _rotationVector = new Vector3(0, 0, -360f);
     private float _elapsedTime;
     private bool _isTimerRunning;
     private string _finalTime;
+    [SerializeField] private float _rotationDuration = 1f;
+    [SerializeField] private Ease _rotationEase = Ease.Linear;
 
-    
     private Tween _rotationTween;
 
-   
+    [SerializeField] private GameManager _gameManager;
+
+
+
+
+
     private void Start()
     {
 
+        _gameManager.OnGameStateChanged += OnGameStateChanged;
         PlayRotationAnimation();
         StartTimer();
     }
 
 
-
-    private void PlayRotationAnimation()
+    private void OnGameStateChanged(GameState gameState)
     {
-        _rotationTween = _timerRotateableTransform.DORotate(_rotationVector, _rotationDuration, RotateMode.FastBeyond360)
-            .SetLoops(-1, LoopType.Restart)
-            .SetEase(_rotationEase);
+        switch (gameState)
+        {
+            case GameState.Play:
+                StartTimer();
+                PlayRotationAnimation();
+                break;
+            case GameState.Pause:
+                StopTimer();
+                break;
+            case GameState.Resume:
+                ResumeTimer();
+                break;
+            case GameState.GameOver:
+                FinishTimer();
+                break;
+        }
+
+      
     }
 
     private void StartTimer()
     {
+        if (_isTimerRunning)
+            return;
+
         _elapsedTime = 0f;
         _isTimerRunning = true;
+        CancelInvoke(nameof(UpdateTimerUI)); // eklenmeli
         InvokeRepeating(nameof(UpdateTimerUI), 0f, 1f);
-    }
-
-    private void StopTimer()
-    {
-        _isTimerRunning = false;
-        CancelInvoke(nameof(UpdateTimerUI));
-        _rotationTween.Pause();
     }
 
     private void ResumeTimer()
@@ -58,16 +75,37 @@ public class TimerUI : MonoBehaviour
         if (!_isTimerRunning)
         {
             _isTimerRunning = true;
+            CancelInvoke(nameof(UpdateTimerUI)); // eklenmeli
             InvokeRepeating(nameof(UpdateTimerUI), 0f, 1f);
-            _rotationTween.Play();
+            _rotationTween?.Play();
         }
     }
 
-    private void FinishTimer()
+
+    private void StopTimer()
+{
+    _isTimerRunning = false;
+    CancelInvoke(nameof(UpdateTimerUI));
+    _rotationTween.Pause();
+}
+
+
+
+private void FinishTimer()
+{
+    StopTimer();
+    _finalTime = GetFormattedElapsedTime();
+}
+
+private void PlayRotationAnimation()
     {
-        StopTimer();
-        _finalTime = GetFormattedElapsedTime();
+        _rotationTween = _timerRotateableTransform.DORotate(_rotationVector, _rotationDuration, RotateMode.FastBeyond360)
+            .SetLoops(-1, LoopType.Restart)
+            .SetEase(_rotationEase);
     }
+
+
+
 
     private string GetFormattedElapsedTime()
     {
